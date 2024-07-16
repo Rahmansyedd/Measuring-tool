@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Measurement Tool</title>
+<style>
+    body {  
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+    }
+
+    #container {
+        max-width: 600px;
+        margin: 20px auto;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+        text-align: center;
+
+    }
+
+    canvas {
+        border: 1px solid #ccc;
+        margin-bottom: 20px;
+    }
+
+    button {
+        padding: 10px 20px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        cursor: pointer;
+    }
+</style>
+</head>
+<body>
+<div id="container">
+    <h2>Measurement Tool</h2>
+    <input type="file" id="imageInput" accept="image/*"><br>
+    <label for="poleHeight">Height of Pole (meters):</label>
+    <input type="number" id="poleHeight" step="0.01" value="10"><br>
+    <label for="imageScale">Scale of Image (meters per pixel):</label>
+    <input type="number" id="imageScale" step="0.01" value="0.1"><br>
+    <canvas id="canvas"></canvas><br>
+    <button onclick="measureDistance()">Measure Distance</button><br>
+    
+    <div id="results"></div> 
+</div>
+
+<script>
+    var canvas = document.getElementById('canvas');
+    var ctx = canvas.getContext('2d');
+    var imageScale = 0.1; // Default scale (meters per pixel)
+    var poleHeight = 10; // Default pole height (meters)
+    var startPoint = null;
+    var endPoint = null;
+
+
+    
+
+    document.getElementById('imageInput').addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        var reader = new FileReader();
+        reader.onload = function(event) {
+            var img = new Image();
+            img.onload = function() {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+            }
+            img.src = event.target.result;
+        }
+        reader.readAsDataURL(file);
+    });
+
+    canvas.addEventListener('click', function(e) {
+        var rect = canvas.getBoundingClientRect();
+        var x = e.clientX - rect.left;
+        var y = e.clientY - rect.top;
+
+        if (!startPoint) {
+            startPoint = { x: x, y: y };
+        } else if (!endPoint) {
+            endPoint = { x: x, y: y };
+            measureDistance();
+        }
+    });
+
+    function measureDistance() {
+        if (startPoint && endPoint) {
+            var distancePixels = Math.sqrt(Math.pow(endPoint.x - startPoint.x, 2) + Math.pow(endPoint.y - startPoint.y, 2));
+            var distanceMeters = distancePixels * imageScale;
+            var midPoint = { x: (startPoint.x + endPoint.x) / 2, y: (startPoint.y + endPoint.y) / 2 };
+            var midspanHeight = (poleHeight * canvas.height) / (distancePixels * imageScale);
+
+            ctx.beginPath();
+            ctx.moveTo(startPoint.x, startPoint.y);
+            ctx.lineTo(endPoint.x, endPoint.y);
+            ctx.strokeStyle = 'red';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            document.getElementById('results').innerHTML = "Distance: " + distanceMeters.toFixed(2) + " meters<br>Midspan Height: " + midspanHeight.toFixed(2) + " meters";
+
+            startPoint = null;
+            endPoint = null;
+            
+        }
+    }
+
+    
+    document.getElementById('poleHeight').addEventListener('input', function(e) {
+        poleHeight = parseFloat(e.target.value);
+    });
+
+
+    document.getElementById('imageScale').addEventListener('input', function(e) {
+        imageScale = parseFloat(e.target.value);
+        
+    });
+</script> 
+</body>
+</html>
